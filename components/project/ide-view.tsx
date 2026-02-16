@@ -329,6 +329,7 @@ export function IDEView({
   const [isDeploying, setIsDeploying] = useState(false)
   const [liveUrl, setLiveUrl] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState("claude-sonnet-4-5-20250929")
+  const [sidebarWidth, setSidebarWidth] = useState(208)
   const [chatWidth, setChatWidth] = useState(340)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
     // Auto-expand all folders from initial files
@@ -347,10 +348,34 @@ export function IDEView({
   const chatEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const dragRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const sidebarDragRef = useRef<{ startX: number; startWidth: number } | null>(null)
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
+
+  // ── drag to resize sidebar ──────────────────────────────────────────────
+
+  const onSidebarDragMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      sidebarDragRef.current = { startX: e.clientX, startWidth: sidebarWidth }
+
+      const onMove = (ev: MouseEvent) => {
+        if (!sidebarDragRef.current) return
+        const delta = ev.clientX - sidebarDragRef.current.startX
+        setSidebarWidth(Math.max(140, Math.min(400, sidebarDragRef.current.startWidth + delta)))
+      }
+      const onUp = () => {
+        sidebarDragRef.current = null
+        window.removeEventListener("mousemove", onMove)
+        window.removeEventListener("mouseup", onUp)
+      }
+      window.addEventListener("mousemove", onMove)
+      window.addEventListener("mouseup", onUp)
+    },
+    [sidebarWidth]
+  )
 
   // ── drag to resize chat panel ─────────────────────────────────────────────
 
@@ -628,7 +653,7 @@ export function IDEView({
 
       {/* ── Left: File Tree ── */}
       {leftOpen && (
-        <div className="w-52 shrink-0 border-r border-border bg-card/50 flex flex-col">
+        <div style={{ width: sidebarWidth }} className="shrink-0 bg-card/50 flex flex-col">
           <div className="flex items-center justify-between px-3 py-2.5 border-b border-border">
             <div className="flex items-center gap-1.5">
               <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
@@ -689,6 +714,15 @@ export function IDEView({
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Drag handle to resize sidebar ── */}
+      {leftOpen && (
+        <div
+          onMouseDown={onSidebarDragMouseDown}
+          className="w-1 shrink-0 cursor-col-resize bg-border hover:bg-primary/50 active:bg-primary/70 transition-colors"
+          title="Drag to resize"
+        />
       )}
 
       {/* ── Center: Preview / Code ── */}
