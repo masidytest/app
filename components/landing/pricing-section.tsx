@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { pricingPlans } from "@/lib/dummy-data"
@@ -44,10 +45,11 @@ export function PricingSection() {
               </ul>
 
               <Button
+                asChild
                 className="mt-8 w-full"
                 variant={plan.highlighted ? "default" : "outline"}
               >
-                {plan.cta}
+                <Link href={plan.href}>{plan.cta}</Link>
               </Button>
             </div>
           ))}
