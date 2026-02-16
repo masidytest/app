@@ -13,9 +13,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const name = req.nextUrl.searchParams.get("name")
+  const name = req.nextUrl.searchParams.get("name")?.trim().toLowerCase()
   if (!name) {
     return NextResponse.json({ error: "name parameter is required" }, { status: 400 })
+  }
+
+  // Validate domain format — must be like "example.com"
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z]{2,})+$/.test(name)) {
+    return NextResponse.json(
+      { error: "Enter a valid domain name (e.g. myapp.com)" },
+      { status: 400 }
+    )
   }
 
   try {
