@@ -1,4 +1,4 @@
-// Domain management via Vercel Domains API — branded as Masidy
+// Domain management via Vercel Domains Registrar API v1 — branded as Masidy
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN
 const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID
 
@@ -21,16 +21,23 @@ export async function checkDomainAvailability(name: string): Promise<{
   if (!VERCEL_TOKEN) throw new Error("Domains not configured")
 
   const [statusRes, priceRes] = await Promise.all([
-    fetch(`https://api.vercel.com/v4/domains/status?name=${encodeURIComponent(name)}${teamQueryAnd()}`, {
-      headers: { Authorization: `Bearer ${VERCEL_TOKEN}` },
-    }),
-    fetch(`https://api.vercel.com/v4/domains/price?name=${encodeURIComponent(name)}${teamQueryAnd()}`, {
-      headers: { Authorization: `Bearer ${VERCEL_TOKEN}` },
-    }),
+    fetch(
+      `https://api.vercel.com/v1/registrar/domains/${encodeURIComponent(name)}/availability${teamQuery()}`,
+      { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+    ),
+    fetch(
+      `https://api.vercel.com/v1/registrar/domains/${encodeURIComponent(name)}/price${teamQuery()}`,
+      { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+    ),
   ])
 
-  if (!statusRes.ok || !priceRes.ok) {
-    throw new Error("Failed to check domain availability")
+  if (!statusRes.ok) {
+    const err = await statusRes.text()
+    throw new Error(`Availability check failed: ${err}`)
+  }
+  if (!priceRes.ok) {
+    const err = await priceRes.text()
+    throw new Error(`Price check failed: ${err}`)
   }
 
   const status = await statusRes.json()
@@ -38,26 +45,70 @@ export async function checkDomainAvailability(name: string): Promise<{
 
   return {
     available: status.available === true,
-    price: price.price,
-    period: price.period,
+    price: price.purchasePrice ?? price.renewalPrice,
+    period: price.years ?? 1,
   }
 }
 
 /** Purchase a domain via Vercel */
-export async function purchaseDomain(name: string): Promise<{
+export async function purchaseDomain(
+  name: string,
+  contactInfo?: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    address1: string
+    city: string
+    state: string
+    zip: string
+    country: string
+  }
+): Promise<{
   domain: string
-  created: boolean
+  orderId: string
 }> {
   if (!VERCEL_TOKEN) throw new Error("Domains not configured")
 
-  const res = await fetch(`https://api.vercel.com/v5/domains/buy${teamQuery()}`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${VERCEL_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name }),
-  })
+  // Get the price first
+  const priceRes = await fetch(
+    `https://api.vercel.com/v1/registrar/domains/${encodeURIComponent(name)}/price${teamQuery()}`,
+    { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+  )
+  if (!priceRes.ok) throw new Error("Failed to get domain price")
+  const priceData = await priceRes.json()
+
+  const expectedPrice = priceData.purchasePrice ?? priceData.renewalPrice
+  if (!expectedPrice) throw new Error("Domain price not available")
+
+  const defaultContact = {
+    firstName: "Masidy",
+    lastName: "Admin",
+    email: "admin@masidy.app",
+    phone: "+1.0000000000",
+    address1: "123 Main St",
+    city: "New York",
+    state: "NY",
+    zip: "10001",
+    country: "US",
+  }
+
+  const res = await fetch(
+    `https://api.vercel.com/v1/registrar/domains/${encodeURIComponent(name)}/buy${teamQuery()}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${VERCEL_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        autoRenew: true,
+        years: priceData.years ?? 1,
+        expectedPrice,
+        contactInformation: contactInfo ?? defaultContact,
+      }),
+    }
+  )
 
   if (!res.ok) {
     const err = await res.text()
@@ -65,7 +116,7 @@ export async function purchaseDomain(name: string): Promise<{
   }
 
   const data = await res.json()
-  return { domain: name, created: true }
+  return { domain: name, orderId: data.orderId }
 }
 
 /** Add a domain to a Vercel project (for deployment) */
