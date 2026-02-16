@@ -3,9 +3,9 @@ import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
 
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "nova-secret-key-change-in-production"
+  process.env.JWT_SECRET ?? "masidy-secret-key-change-in-production"
 )
-const COOKIE = "nova_session"
+const COOKIE = "masidy_session"
 const EXPIRY = "30d"
 
 export type SessionPayload = {

@@ -2,13 +2,15 @@
 import { NextRequest } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { prisma } from "@/lib/prisma"
+import { getSession } from "@/lib/auth"
+import { checkUsageLimit, recordUsage } from "@/lib/usage"
 import { z } from "zod"
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 })
 
-const SYSTEM_PROMPT = `You are Nova, an AI assistant that helps users build and modify web applications.
+const SYSTEM_PROMPT = `You are Masidy, an AI assistant that helps users build and modify web applications.
 
 ⚠️ RULE #1 — OBEY THE USER:
 - You are a tool. Do EXACTLY what the user asks — nothing more, nothing less.
@@ -33,7 +35,16 @@ FILE: path/to/filename.ext
 ...complete file content...
 \`\`\`
 
-FILE RULES:
+PROJECT TYPES — you support TWO modes:
+
+A) STATIC WEB APP (default — HTML/CSS/JS):
+   Use this when the user asks for websites, landing pages, dashboards, or front-end apps.
+
+B) FULLSTACK APP (Node.js or Python):
+   Use this when the user asks for APIs, servers, backends, real-time apps, databases, or says "fullstack".
+   The user can click "Run" to execute code in a real isolated sandbox (Linux VM).
+
+FILE RULES FOR STATIC WEB APPS:
 
 1. SEPARATE FILES — never put everything in one index.html.
    - HTML pages go in pages/ (e.g., pages/login.html, pages/dashboard.html)
@@ -64,6 +75,29 @@ FILE RULES:
    - js/db.js: localStorage/IndexedDB database layer
    - js/auth.js: authentication (login/logout/register/token)
 
+FILE RULES FOR FULLSTACK APPS:
+
+1. ALWAYS include a package.json with a "start" script.
+2. Node.js example structure:
+   package.json         ← dependencies + "start": "node server.js"
+   server.js            ← Express/Fastify server on port 3000
+   public/index.html    ← frontend served by the server
+   public/css/styles.css
+   public/js/app.js
+   routes/              ← API route handlers
+   lib/                 ← shared utilities
+
+3. Python example structure:
+   main.py or app.py    ← Flask/FastAPI server on port 3000
+   requirements.txt     ← pip dependencies
+   templates/           ← Jinja2 templates
+   static/              ← CSS/JS/images
+
+4. The server MUST listen on port 3000.
+5. Use environment variables for secrets (process.env.XXX or os.environ).
+
+GENERAL RULES:
+
 6. WHEN MODIFYING AN EXISTING PROJECT:
    - Output ONLY files that are NEW or CHANGED
    - Existing unchanged files are preserved automatically by the system
@@ -73,7 +107,7 @@ FILE RULES:
 
 7. WHEN BUILDING A NEW PROJECT:
    - Output ALL files
-   - Generate index.html FIRST, then css/styles.css, then pages, then JS modules
+   - Generate index.html FIRST (or package.json for fullstack), then CSS, then pages, then JS/routes
 
 8. NEVER truncate files or use "..." placeholders — always output FULL file content`
 
@@ -83,9 +117,16 @@ const ALLOWED_MODELS = [
   "claude-haiku-4-5-20251001",
 ] as const
 
+const attachmentSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  type: z.string(),
+})
+
 const bodySchema = z.object({
   message: z.string().min(1),
   model: z.enum(ALLOWED_MODELS).optional().default("claude-sonnet-4-5-20250929"),
+  attachments: z.array(attachmentSchema).optional(),
 })
 
 export async function POST(
@@ -94,9 +135,32 @@ export async function POST(
 ) {
   const { projectId } = await params
 
+  // Auth check
+  const session = await getSession()
+  if (!session?.sub) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
+  // Usage limit check
+  const usage = await checkUsageLimit(session.sub)
+  if (!usage.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: "Usage limit reached",
+        used: usage.used,
+        limit: usage.limit,
+        plan: usage.plan,
+      }),
+      { status: 429, headers: { "Content-Type": "application/json" } }
+    )
+  }
+
   try {
     const body = await req.json()
-    const { message, model } = bodySchema.parse(body)
+    const { message, model, attachments } = bodySchema.parse(body)
 
     // Load conversation history (last 20 messages for context)
     const history = await prisma.projectMessage.findMany({
@@ -135,12 +199,45 @@ RULES FOR THIS REQUEST:
       data: { projectId, role: "user", content: message },
     })
 
+    // Build the user message content — text + optional image attachments
+    const userContent: Anthropic.ContentBlockParam[] = []
+
+    // Add image attachments (for Claude vision)
+    if (attachments?.length) {
+      for (const att of attachments) {
+        if (att.type.startsWith("image/") && att.url.startsWith("data:")) {
+          const base64Match = att.url.match(/^data:([^;]+);base64,(.+)$/)
+          if (base64Match) {
+            userContent.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: base64Match[1] as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: base64Match[2],
+              },
+            })
+          }
+        } else if (att.type.startsWith("text/") || att.url.startsWith("data:")) {
+          // Text file — include content inline
+          const textMatch = att.url.match(/^data:[^;]+;text,(.+)$/)
+          if (textMatch) {
+            userContent.push({
+              type: "text",
+              text: `[Attached file: ${att.name}]\n${decodeURIComponent(textMatch[1])}`,
+            })
+          }
+        }
+      }
+    }
+
+    userContent.push({ type: "text", text: message })
+
     const anthropicMessages: Anthropic.MessageParam[] = [
       ...history.map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       })),
-      { role: "user" as const, content: message },
+      { role: "user" as const, content: userContent },
     ]
 
     let fullResponse = ""
@@ -170,6 +267,9 @@ RULES FOR THIS REQUEST:
           await prisma.projectMessage.create({
             data: { projectId, role: "assistant", content: fullResponse },
           })
+
+          // Record usage event
+          await recordUsage(session.sub)
 
           // Signal client that stream + save is complete
           controller.enqueue(new TextEncoder().encode("\n[NOVA_READY]"))

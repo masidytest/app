@@ -3,8 +3,8 @@ import { PricingSection } from "@/components/landing/pricing-section"
 import { FAQSection } from "@/components/landing/faq-section"
 
 export const metadata: Metadata = {
-  title: "Pricing - NovaBuilder",
-  description: "Simple, transparent pricing for NovaBuilder. Start free and scale as you grow.",
+  title: "Pricing - Masidy",
+  description: "Simple, transparent pricing for Masidy. Start free and scale as you grow.",
 }
 
 export default function PricingPage() {

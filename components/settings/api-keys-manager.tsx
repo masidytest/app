@@ -79,7 +79,7 @@ export function ApiKeysManager({ initialKeys }: { initialKeys: ApiKey[] }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">API Keys</CardTitle>
-          <CardDescription>Keys used to access NovaBuilder APIs.</CardDescription>
+          <CardDescription>Keys used to access Masidy APIs.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {newRawKey && (

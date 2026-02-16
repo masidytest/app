@@ -11,15 +11,16 @@ datasource db {
 }
 
 model User {
-  id           String            @id @default(uuid())
-  email        String            @unique
-  name         String?
-  passwordHash String?
-  workspaces   WorkspaceMember[]
-  usageEvents  UsageEvent[]
-  subscriptions Subscription[]
-  apiKeys      ApiKey[]
-  createdAt    DateTime          @default(now())
+  id               String            @id @default(uuid())
+  email            String            @unique
+  name             String?
+  passwordHash     String?
+  stripeCustomerId String?           @unique
+  workspaces       WorkspaceMember[]
+  usageEvents      UsageEvent[]
+  subscriptions    Subscription[]
+  apiKeys          ApiKey[]
+  createdAt        DateTime          @default(now())
 }
 
 model ApiKey {
@@ -63,6 +64,8 @@ model Project {
   versions    Version[]
   deployments Deployment[]
   messages    ProjectMessage[]
+  services    ProjectService[]
+  envVars     ProjectEnvVar[]
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 }
@@ -72,6 +75,7 @@ model Version {
   project     Project      @relation(fields: [projectId], references: [id])
   projectId   String
   number      Int
+  snapshot    Json?
   deployments Deployment[]
   createdAt   DateTime     @default(now())
 }
@@ -115,4 +119,31 @@ model Subscription {
   plan      String
   status    String
   createdAt DateTime @default(now())
+}
+
+model ProjectService {
+  id          String   @id @default(uuid())
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  type        String   // "database" | "kv" | "blob" | "auth"
+  name        String   // User-facing label
+  status      String   @default("provisioning") // "provisioning" | "active" | "error"
+  credentials Json?    // Encrypted connection strings, keys, etc.
+  externalId  String?  // ID in the external provider
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([projectId, type])
+}
+
+model ProjectEnvVar {
+  id        String   @id @default(uuid())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  key       String
+  value     String
+  target    String   @default("production") // "production" | "preview" | "development"
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, key, target])
 }

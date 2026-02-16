@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem("nova_pending_prompt")
+    const saved = localStorage.getItem("masidy_pending_prompt")
     if (saved) setPendingPrompt(saved)
   }, [])
 
@@ -35,11 +35,11 @@ export default function LoginPage() {
       if (!res.ok) { setError(data.error ?? "Login failed"); return }
 
       // Check for a pending build prompt saved from the landing page
-      const pending = localStorage.getItem("nova_pending_prompt")
+      const pending = localStorage.getItem("masidy_pending_prompt")
       const workspaceId: string | null | undefined = data.workspaceId
 
       if (pending && workspaceId) {
-        localStorage.removeItem("nova_pending_prompt")
+        localStorage.removeItem("masidy_pending_prompt")
 
         const projectRes = await fetch("/api/projects", {
           method: "POST",
@@ -54,7 +54,7 @@ export default function LoginPage() {
         if (projectRes.ok) {
           const projectData = await projectRes.json()
           const projectId: string = projectData.project.id
-          localStorage.setItem("nova_autostart_prompt", pending)
+          localStorage.setItem("masidy_autostart_prompt", pending)
           router.push(`/app/projects/${projectId}/ide?autostart=1`)
           router.refresh()
           return
@@ -80,7 +80,7 @@ export default function LoginPage() {
         </div>
         <h1 className="mt-6 text-center text-2xl font-bold text-foreground">Welcome back</h1>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          {pendingPrompt ? "Log in to start building your app" : "Log in to your NovaBuilder account"}
+          {pendingPrompt ? "Log in to start building your app" : "Log in to your Masidy account"}
         </p>
         {pendingPrompt && (
           <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">

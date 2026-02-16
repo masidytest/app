@@ -8,7 +8,7 @@ const EMPTY_PREVIEW = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nova Preview</title>
+  <title>Masidy Preview</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gray-950 flex items-center justify-center">
@@ -19,7 +19,7 @@ const EMPTY_PREVIEW = `<!DOCTYPE html>
           d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
       </svg>
     </div>
-    <h1 class="text-white text-xl font-semibold mb-3">Nova AI Builder</h1>
+    <h1 class="text-white text-xl font-semibold mb-3">Masidy</h1>
     <p class="text-gray-400 text-sm max-w-sm leading-relaxed">
       Describe the app you want to build in the chat panel and the AI will generate it here in real time.
     </p>

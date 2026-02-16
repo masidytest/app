@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = createSchema.parse(await req.json())
 
-    // Generate a random API key: nova_<32 random hex chars>
-    const raw = `nova_${randomBytes(20).toString("hex")}`
-    const prefix = raw.slice(0, 12) // "nova_" + first 7 chars
+    // Generate a random API key: msd_<40 random hex chars>
+    const raw = `msd_${randomBytes(20).toString("hex")}`
+    const prefix = raw.slice(0, 8) // "msd_" + first 4 chars
     const keyHash = await bcrypt.hash(raw, 10)
 
     const key = await prisma.apiKey.create({

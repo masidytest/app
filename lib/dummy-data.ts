@@ -80,7 +80,7 @@ export const dummyDeployments: Deployment[] = [
     id: "dep-1",
     projectId: "proj-1",
     status: "live",
-    url: "https://support-bot.novabuilder.app",
+    url: "https://support-bot.masidy.app",
     createdAt: "2026-02-10T14:30:00Z",
     commit: "a1b2c3d",
   },
@@ -88,7 +88,7 @@ export const dummyDeployments: Deployment[] = [
     id: "dep-2",
     projectId: "proj-1",
     status: "stopped",
-    url: "https://support-bot-prev.novabuilder.app",
+    url: "https://support-bot-prev.masidy.app",
     createdAt: "2026-02-05T09:00:00Z",
     commit: "e4f5g6h",
   },
@@ -96,7 +96,7 @@ export const dummyDeployments: Deployment[] = [
     id: "dep-3",
     projectId: "proj-2",
     status: "building",
-    url: "https://lead-scoring-dev.novabuilder.app",
+    url: "https://lead-scoring-dev.masidy.app",
     createdAt: "2026-02-14T11:00:00Z",
     commit: "i7j8k9l",
   },
@@ -183,20 +183,20 @@ export const pricingPlans = [
 
 export const faqItems = [
   {
-    question: "How does NovaBuilder work?",
+    question: "How does Masidy work?",
     answer: "Simply describe what you want to build in plain English. Our AI Builder agent will design the architecture, write the code, set up the infrastructure, and deploy your app. You interact only through conversation and simple action buttons.",
   },
   {
     question: "Do I need to know how to code?",
-    answer: "No coding skills are required. NovaBuilder's AI handles all the technical work. You just describe your requirements, review the results, test in the sandbox, and deploy when ready.",
+    answer: "No coding skills are required. Masidy's AI handles all the technical work. You just describe your requirements, review the results, test in the sandbox, and deploy when ready.",
   },
   {
     question: "What kind of apps can I build?",
-    answer: "You can build any AI-powered SaaS application: chatbots, data processing pipelines, content generators, analytics dashboards, automation tools, and more. If it involves AI and runs on the web, NovaBuilder can build it.",
+    answer: "You can build any AI-powered SaaS application: chatbots, data processing pipelines, content generators, analytics dashboards, automation tools, and more. If it involves AI and runs on the web, Masidy can build it.",
   },
   {
     question: "How are deployments handled?",
-    answer: "Each project gets a sandbox for testing and a production deployment with a unique URL. You can also connect custom domains. All infrastructure is fully managed by NovaBuilder.",
+    answer: "Each project gets a sandbox for testing and a production deployment with a unique URL. You can also connect custom domains. All infrastructure is fully managed by Masidy.",
   },
   {
     question: "Can I export my code?",

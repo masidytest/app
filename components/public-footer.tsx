@@ -11,7 +11,7 @@ export function PublicFooter() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <Zap className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold text-foreground">NovaBuilder</span>
+              <span className="text-lg font-bold text-foreground">Masidy</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               Describe it. We build the AI SaaS.
@@ -48,7 +48,7 @@ export function PublicFooter() {
 
         <div className="mt-10 border-t border-border pt-6">
           <p className="text-center text-xs text-muted-foreground">
-            {'© 2026 NovaBuilder. All rights reserved.'}
+            {'© 2026 Masidy. All rights reserved.'}
           </p>
         </div>
       </div>

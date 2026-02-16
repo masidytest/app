@@ -10,7 +10,7 @@ export function FAQSection() {
             Frequently asked questions
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground leading-relaxed">
-            Everything you need to know about NovaBuilder.
+            Everything you need to know about Masidy.
           </p>
         </div>
 

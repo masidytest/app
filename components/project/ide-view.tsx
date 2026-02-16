@@ -25,10 +25,16 @@ import {
   Square,
   CheckCircle2,
   Zap,
+  Paperclip,
+  X,
+  Play,
+  StopCircle,
+  Terminal,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { VersionHistory } from "@/components/project/version-history"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -329,6 +335,11 @@ export function IDEView({
   const [isDeploying, setIsDeploying] = useState(false)
   const [liveUrl, setLiveUrl] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState("claude-sonnet-4-5-20250929")
+  const [attachments, setAttachments] = useState<{ name: string; url: string; type: string }[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [sandboxId, setSandboxId] = useState<string | null>(null)
+  const [sandboxUrl, setSandboxUrl] = useState<string | null>(null)
+  const [isSandboxLoading, setIsSandboxLoading] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(208)
   const [chatWidth, setChatWidth] = useState(340)
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
@@ -432,7 +443,11 @@ export function IDEView({
         const response = await fetch(`/api/projects/${projectId}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: userContent, model: selectedModel }),
+          body: JSON.stringify({
+            message: userContent,
+            model: selectedModel,
+            attachments: attachments.length > 0 ? attachments : undefined,
+          }),
           signal: controller.signal,
         })
 
@@ -518,6 +533,13 @@ export function IDEView({
           })
           setFiles(mergedFiles)
 
+          // Auto-create a version snapshot after each successful build
+          fetch("/api/versions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ projectId }),
+          }).catch(() => {})
+
           // Expand all folders from the final file set
           setExpandedFolders((prev) => {
             const next = new Set(prev)
@@ -582,17 +604,44 @@ export function IDEView({
     const content = input.trim()
     if (!content || isStreaming) return
     setInput("")
+    setAttachments([])
     await sendMessage(content)
   }, [input, isStreaming, sendMessage])
+
+  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList) return
+
+    const formData = new FormData()
+    for (let i = 0; i < fileList.length; i++) {
+      formData.append("files", fileList[i])
+    }
+
+    try {
+      const res = await fetch(`/api/projects/${projectId}/upload`, {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.files) {
+        setAttachments((prev) => [...prev, ...data.files])
+      }
+    } catch {
+      toast.error("Failed to upload file")
+    }
+
+    // Reset input so same file can be re-selected
+    e.target.value = ""
+  }, [projectId])
 
   // Auto-send prompt when ?autostart=1
   useEffect(() => {
     if (autoStartedRef.current) return
     if (searchParams.get("autostart") !== "1") return
-    const prompt = localStorage.getItem("nova_autostart_prompt")
+    const prompt = localStorage.getItem("masidy_autostart_prompt")
     if (!prompt) return
     autoStartedRef.current = true
-    localStorage.removeItem("nova_autostart_prompt")
+    localStorage.removeItem("masidy_autostart_prompt")
     setTimeout(() => sendMessage(prompt), 800)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -626,6 +675,47 @@ export function IDEView({
       toast.error("Deployment failed", { description: String(err) })
     } finally {
       setIsDeploying(false)
+    }
+  }
+
+  // ── sandbox ──────────────────────────────────────────────────────────────
+
+  const handleRunSandbox = async () => {
+    if (Object.keys(files).length === 0) {
+      toast.error("No files to run", { description: "Build something first." })
+      return
+    }
+    setIsSandboxLoading(true)
+    try {
+      const res = await fetch("/api/sandbox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? "Sandbox creation failed")
+      setSandboxId(data.sandboxId)
+      setSandboxUrl(data.url)
+      toast.success("Sandbox running!", {
+        description: data.url ? `Live at ${data.url}` : "Starting up…",
+        duration: 8000,
+      })
+    } catch (err) {
+      toast.error("Sandbox failed", { description: String(err) })
+    } finally {
+      setIsSandboxLoading(false)
+    }
+  }
+
+  const handleStopSandbox = async () => {
+    if (!sandboxId) return
+    try {
+      await fetch(`/api/sandbox/${sandboxId}`, { method: "DELETE" })
+      setSandboxId(null)
+      setSandboxUrl(null)
+      toast.success("Sandbox stopped")
+    } catch {
+      toast.error("Failed to stop sandbox")
     }
   }
 
@@ -698,6 +788,30 @@ export function IDEView({
               </div>
             )}
           </div>
+
+          {/* Version history */}
+          {fileList.length > 0 && (
+            <div className="border-t border-border">
+              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Versions
+              </p>
+              <VersionHistory
+                projectId={projectId}
+                onRollback={async () => {
+                  // Reload project files after rollback
+                  const res = await fetch(`/api/projects/${projectId}`)
+                  const data = await res.json()
+                  const cfg = data.project?.configJson as { files?: Record<string, string> } | null
+                  if (cfg?.files) {
+                    setFiles(cfg.files)
+                    setPreviewSrc("api")
+                    setPreviewKey((k) => k + 1)
+                    toast.success("Rolled back successfully")
+                  }
+                }}
+              />
+            </div>
+          )}
 
           {liveUrl && (
             <div className="border-t border-border p-3">
@@ -810,6 +924,47 @@ export function IDEView({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Sandbox controls */}
+            {sandboxId ? (
+              <div className="flex items-center gap-1">
+                {sandboxUrl && (
+                  <a
+                    href={sandboxUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 text-[10px] text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                  >
+                    <Terminal className="h-3 w-3" />
+                    Sandbox Live
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs text-red-400 border-red-500/20 hover:bg-red-500/10"
+                  onClick={handleStopSandbox}
+                >
+                  <StopCircle className="mr-1 h-3 w-3" />
+                  Stop
+                </Button>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={handleRunSandbox}
+                disabled={isSandboxLoading || fileList.length === 0}
+              >
+                {isSandboxLoading ? (
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                ) : (
+                  <Play className="mr-1 h-3 w-3" />
+                )}
+                Run
+              </Button>
+            )}
             <Button
               size="sm"
               className="h-7 text-xs"
@@ -848,7 +1003,15 @@ export function IDEView({
                   previewMode === "mobile" && "w-[375px] max-w-full"
                 )}
               >
-                {previewSrc === "srcDoc" ? (
+                {sandboxUrl ? (
+                  <iframe
+                    key={`sandbox-${previewKey}`}
+                    src={sandboxUrl}
+                    className="w-full h-full border-0"
+                    title="Sandbox Preview"
+                    allow="cross-origin-isolated"
+                  />
+                ) : previewSrc === "srcDoc" ? (
                   <iframe
                     key={`srcDoc-${previewKey}`}
                     srcDoc={previewHtml}
@@ -1092,7 +1255,42 @@ export function IDEView({
 
           {/* Input */}
           <div className="border-t border-border p-3">
+            {/* Attachment chips */}
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-2">
+                {attachments.map((att, i) => (
+                  <span
+                    key={i}
+                    className="flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-[10px] text-muted-foreground border border-border"
+                  >
+                    <Paperclip className="h-2.5 w-2.5" />
+                    {att.name}
+                    <button
+                      onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                      className="hover:text-foreground"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,text/*,.json,.csv,.md,.txt,.html,.css,.js,.ts"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0 rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Attach file"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+              </button>
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

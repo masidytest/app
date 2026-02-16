@@ -2,12 +2,12 @@ import type { Metadata } from "next"
 import { BookOpen, FileText, Code, Rocket } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Documentation - NovaBuilder",
-  description: "Learn how to use NovaBuilder to build and deploy AI-powered apps.",
+  title: "Documentation - Masidy",
+  description: "Learn how to use Masidy to build and deploy AI-powered apps.",
 }
 
 const sections = [
-  { icon: BookOpen, title: "Getting Started", description: "Learn the basics of NovaBuilder and create your first AI app." },
+  { icon: BookOpen, title: "Getting Started", description: "Learn the basics of Masidy and create your first AI app." },
   { icon: FileText, title: "Guides", description: "Step-by-step tutorials for common workflows and use cases." },
   { icon: Code, title: "API Reference", description: "Complete API documentation for programmatic access." },
   { icon: Rocket, title: "Deployment", description: "Learn about deployment options, custom domains, and scaling." },
@@ -18,7 +18,7 @@ export default function DocsPage() {
     <div className="mx-auto max-w-4xl px-6 py-16 md:py-24">
       <h1 className="text-3xl font-bold text-foreground md:text-4xl">Documentation</h1>
       <p className="mt-4 text-muted-foreground leading-relaxed">
-        Everything you need to build, test, and deploy AI apps with NovaBuilder.
+        Everything you need to build, test, and deploy AI apps with Masidy.
       </p>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">

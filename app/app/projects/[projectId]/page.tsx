@@ -79,12 +79,12 @@ export default async function ProjectOverviewPage({ params }: { params: Promise<
                     </div>
                     <div className="flex items-center gap-3">
                       <a
-                        href={dep.url ?? `https://${dep.slug}.novabuilder.app`}
+                        href={dep.url ?? `https://${dep.slug}.masidy.app`}
                         className="flex items-center gap-1 text-xs text-primary hover:underline"
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {(dep.url ?? `https://${dep.slug}.novabuilder.app`).replace("https://", "")}
+                        {(dep.url ?? `https://${dep.slug}.masidy.app`).replace("https://", "")}
                         <ExternalLink className="h-3 w-3" />
                       </a>
                       <span className="text-xs text-muted-foreground">

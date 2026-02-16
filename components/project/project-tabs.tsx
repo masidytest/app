@@ -9,6 +9,8 @@ const tabs = [
   { label: "IDE", href: "/ide" },
   { label: "Sandbox", href: "/sandbox" },
   { label: "Deployments", href: "/deployments" },
+  { label: "Domains", href: "/domains" },
+  { label: "Services", href: "/services" },
   { label: "Logs", href: "/logs" },
   { label: "Settings", href: "/settings" },
 ]

@@ -14,6 +14,8 @@ import {
   Key,
   ChevronDown,
   LogOut,
+  Users,
+  BarChart3,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
@@ -87,6 +89,12 @@ export function AppSidebar({
       href: workspaceId ? `/app/workspaces/${workspaceId}/data` : createWorkspaceHref,
       icon: Database,
     },
+    {
+      label: "Members",
+      href: workspaceId ? `/app/workspaces/${workspaceId}/members` : createWorkspaceHref,
+      icon: Users,
+    },
+    { label: "Analytics", href: "/app/analytics", icon: BarChart3 },
     { label: "Settings", href: "/app/settings/account", icon: Settings },
   ]
 
@@ -103,7 +111,7 @@ export function AppSidebar({
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
             <Zap className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <span className="text-sm font-bold text-sidebar-foreground">NovaBuilder</span>
+          <span className="text-sm font-bold text-sidebar-foreground">Masidy</span>
         </Link>
       </div>
 

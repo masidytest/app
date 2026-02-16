@@ -36,7 +36,7 @@ export function BuildPromptInput({ primaryWorkspaceId }: { primaryWorkspaceId: s
       if (!res.ok) throw new Error("Failed to create project")
       const data = await res.json()
       const projectId: string = data.project.id
-      localStorage.setItem("nova_autostart_prompt", text)
+      localStorage.setItem("masidy_autostart_prompt", text)
       router.push(`/app/projects/${projectId}/ide?autostart=1`)
     } catch {
       setError("Failed to create project. Please try again.")

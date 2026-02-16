@@ -1,4 +1,4 @@
-// Version lifecycle API handler
+// Version lifecycle API handler — now with snapshot support
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
@@ -14,6 +14,13 @@ export async function GET(req: NextRequest) {
     const versions = await prisma.version.findMany({
       where: projectId ? { projectId } : undefined,
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        number: true,
+        projectId: true,
+        createdAt: true,
+        // Don't include snapshot in list — it can be large
+      },
     })
     return NextResponse.json({ versions })
   } catch (error) {
@@ -29,19 +36,24 @@ export async function POST(req: NextRequest) {
     const payload = versionSchema.parse(await req.json())
     const project = await prisma.project.findUnique({
       where: { id: payload.projectId },
+      select: { id: true, configJson: true },
     })
 
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 })
     }
+
     const latest = await prisma.version.findFirst({
       where: { projectId: payload.projectId },
       orderBy: { number: "desc" },
     })
+
+    // Snapshot the current project files
     const version = await prisma.version.create({
       data: {
         projectId: payload.projectId,
         number: payload.number ?? (latest?.number ?? 0) + 1,
+        snapshot: project.configJson ?? undefined,
       },
     })
     return NextResponse.json({ version })

@@ -18,7 +18,7 @@ export default function SignupPage() {
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(null)
 
   useEffect(() => {
-    const saved = localStorage.getItem("nova_pending_prompt")
+    const saved = localStorage.getItem("masidy_pending_prompt")
     if (saved) setPendingPrompt(saved)
   }, [])
 
@@ -36,11 +36,11 @@ export default function SignupPage() {
       if (!res.ok) { setError(data.error ?? "Signup failed"); return }
 
       // Check for a pending build prompt saved from the landing page
-      const pendingPrompt = localStorage.getItem("nova_pending_prompt")
+      const pendingPrompt = localStorage.getItem("masidy_pending_prompt")
       const workspaceId: string | undefined = data.workspaceId
 
       if (pendingPrompt && workspaceId) {
-        localStorage.removeItem("nova_pending_prompt")
+        localStorage.removeItem("masidy_pending_prompt")
 
         // Auto-create a project from the description
         const projectRes = await fetch("/api/projects", {
@@ -57,7 +57,7 @@ export default function SignupPage() {
           const projectData = await projectRes.json()
           const projectId: string = projectData.project.id
           // Save prompt for IDE to auto-start building
-          localStorage.setItem("nova_autostart_prompt", pendingPrompt)
+          localStorage.setItem("masidy_autostart_prompt", pendingPrompt)
           router.push(`/app/projects/${projectId}/ide?autostart=1`)
           router.refresh()
           return

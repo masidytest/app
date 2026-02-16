@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "Changelog - NovaBuilder",
-  description: "Stay up to date with the latest features and improvements to NovaBuilder.",
+  title: "Changelog - Masidy",
+  description: "Stay up to date with the latest features and improvements to Masidy.",
 }
 
 const entries = [
@@ -37,7 +37,7 @@ export default function ChangelogPage() {
     <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
       <h1 className="text-3xl font-bold text-foreground md:text-4xl">Changelog</h1>
       <p className="mt-4 text-muted-foreground leading-relaxed">
-        The latest updates and improvements to NovaBuilder.
+        The latest updates and improvements to Masidy.
       </p>
 
       <div className="mt-12 flex flex-col gap-10">

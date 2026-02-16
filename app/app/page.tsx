@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/auth"
 
 export const metadata: Metadata = {
-  title: "Dashboard - NovaBuilder",
+  title: "Dashboard - Masidy",
   description: "Manage your AI-powered apps and workspaces.",
 }
 

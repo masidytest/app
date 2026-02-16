@@ -42,7 +42,7 @@ export function FeaturesSection() {
             Everything you need to ship AI apps
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground leading-relaxed">
-            From idea to production, NovaBuilder handles the entire lifecycle of your AI-powered applications.
+            From idea to production, Masidy handles the entire lifecycle of your AI-powered applications.
           </p>
         </div>
 

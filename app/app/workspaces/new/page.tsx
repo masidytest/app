@@ -68,7 +68,7 @@ export default function NewWorkspacePage() {
                 id="name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                placeholder="e.g. Nova Labs"
+                placeholder="e.g. Masidy Labs"
               />
             </div>
             {error && (

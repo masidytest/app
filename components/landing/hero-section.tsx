@@ -29,7 +29,7 @@ async function createProjectAndRedirect(
   if (!projectRes.ok) throw new Error("Failed to create project")
   const projectData = await projectRes.json()
   const projectId: string = projectData.project.id
-  localStorage.setItem("nova_autostart_prompt", prompt)
+  localStorage.setItem("masidy_autostart_prompt", prompt)
   router.push(`/app/projects/${projectId}/ide?autostart=1`)
 }
 
@@ -57,11 +57,11 @@ export function HeroSection() {
         return
       }
       // Not logged in — save prompt and redirect to signup
-      localStorage.setItem("nova_pending_prompt", text)
+      localStorage.setItem("masidy_pending_prompt", text)
       router.push("/signup")
     } catch {
       // Fallback: treat as unauthenticated
-      localStorage.setItem("nova_pending_prompt", text)
+      localStorage.setItem("masidy_pending_prompt", text)
       router.push("/signup")
     }
   }

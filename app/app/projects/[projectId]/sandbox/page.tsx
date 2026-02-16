@@ -6,6 +6,7 @@ import { ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
+import { SandboxPreview } from "@/components/project/sandbox-preview"
 
 const deployStatusStyles: Record<string, string> = {
   live: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -28,11 +29,19 @@ export default async function ProjectSandboxPage({
   const project = await prisma.project.findUnique({ where: { id: projectId } })
   if (!project) notFound()
 
-  const deployments = await prisma.deployment.findMany({
-    where: { projectId },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  })
+  const [deployments, versions] = await Promise.all([
+    prisma.deployment.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+    prisma.version.findMany({
+      where: { projectId },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, number: true, createdAt: true },
+    }),
+  ])
 
   const config = project.configJson as ConfigJson | null
   const envVars = config?.envVars ?? {}
@@ -41,6 +50,19 @@ export default async function ProjectSandboxPage({
 
   return (
     <div className="px-8 py-8">
+      {/* Live preview iframe */}
+      {hasFiles && (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Live Preview</CardTitle>
+            <CardDescription>Interactive preview with responsive mode switching.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SandboxPreview projectId={projectId} />
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <Card>
           <CardHeader>
@@ -81,8 +103,8 @@ export default async function ProjectSandboxPage({
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-card px-4 py-3">
-                <p className="text-xs text-muted-foreground">Deployments</p>
-                <p className="mt-2 text-sm font-medium text-foreground">{deployments.length}</p>
+                <p className="text-xs text-muted-foreground">Versions</p>
+                <p className="mt-2 text-sm font-medium text-foreground">{versions.length}</p>
               </div>
               <div className="rounded-lg border border-border bg-card px-4 py-3">
                 <p className="text-xs text-muted-foreground">Last updated</p>
@@ -114,28 +136,28 @@ export default async function ProjectSandboxPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Environment Variables</CardTitle>
-            <CardDescription>Runtime variables stored in this project.</CardDescription>
+            <CardTitle className="text-lg">Version History</CardTitle>
+            <CardDescription>Snapshots created after each AI build.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {Object.keys(envVars).length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                No environment variables set. Add them in{" "}
-                <Link href={`/app/projects/${projectId}/settings`} className="text-primary hover:underline">
-                  Project Settings
-                </Link>
-                .
-              </p>
+          <CardContent className="space-y-2">
+            {versions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No versions yet. Build with the AI to create snapshots.</p>
             ) : (
-              Object.entries(envVars).map(([key]) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2"
-                >
-                  <span className="font-mono text-xs text-foreground">{key}</span>
-                  <span className="text-xs text-muted-foreground">••••••••</span>
-                </div>
-              ))
+              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto">
+                {versions.map((v) => (
+                  <div
+                    key={v.id}
+                    className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2"
+                  >
+                    <div>
+                      <span className="text-sm font-medium text-foreground">v{v.number}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {new Date(v.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>

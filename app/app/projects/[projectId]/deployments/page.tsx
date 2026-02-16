@@ -97,11 +97,11 @@ export default async function ProjectDeploymentsPage({
                   <TableCell>
                       <a
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                        href={deployment.url ?? `https://${deployment.slug}.novabuilder.app`}
+                        href={deployment.url ?? `https://${deployment.slug}.masidy.app`}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {(deployment.url ?? `https://${deployment.slug}.novabuilder.app`).replace("https://", "")}
+                        {(deployment.url ?? `https://${deployment.slug}.masidy.app`).replace("https://", "")}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </TableCell>
