@@ -1,0 +1,118 @@
+// Prisma schema for core entities
+// Run `npx prisma generate` after editing
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  name         String?
+  passwordHash String?
+  workspaces   WorkspaceMember[]
+  usageEvents  UsageEvent[]
+  subscriptions Subscription[]
+  apiKeys      ApiKey[]
+  createdAt    DateTime          @default(now())
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  name      String
+  keyHash   String   @unique
+  prefix    String
+  scopes    String   @default("read")
+  createdAt DateTime @default(now())
+}
+
+model Workspace {
+  id        String            @id @default(uuid())
+  name      String
+  plan      String            @default("free")
+  members   WorkspaceMember[]
+  projects  Project[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  role        String
+}
+
+model Project {
+  id          String           @id @default(uuid())
+  name        String
+  description String?
+  status      String           @default("draft")
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  configJson  Json?
+  versions    Version[]
+  deployments Deployment[]
+  messages    ProjectMessage[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model Version {
+  id          String       @id @default(uuid())
+  project     Project      @relation(fields: [projectId], references: [id])
+  projectId   String
+  number      Int
+  deployments Deployment[]
+  createdAt   DateTime     @default(now())
+}
+
+model Deployment {
+  id        String   @id @default(uuid())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  slug      String   @unique
+  status    String   @default("building")
+  url       String?
+  commit    String?
+  version   Version  @relation(fields: [versionId], references: [id])
+  versionId String
+  createdAt DateTime @default(now())
+}
+
+model ProjectMessage {
+  id        String   @id @default(uuid())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model UsageEvent {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String
+  amount    Int
+  createdAt DateTime @default(now())
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  stripeId  String   @unique
+  plan      String
+  status    String
+  createdAt DateTime @default(now())
+}
