@@ -1,10 +1,54 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { pricingPlans } from "@/lib/dummy-data"
 import { cn } from "@/lib/utils"
 
 export function PricingSection() {
+  const router = useRouter()
+  const [loading, setLoading] = useState<string | null>(null)
+
+  async function handleUpgrade(planName: string) {
+    setLoading(planName)
+    try {
+      // Determine which PayPal plan to use based on button name
+      const planId =
+        planName === "Pro" ? "pro" : planName === "Enterprise" ? "enterprise" : null
+      if (!planId) {
+        router.push("/signup")
+        return
+      }
+
+      const res = await fetch("/api/paypal/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
+      })
+
+      if (res.status === 401) {
+        // Not logged in — send to signup
+        router.push("/signup")
+        return
+      }
+
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else if (data.error) {
+        // Fallback: send to billing page
+        router.push("/app/settings/billing")
+      }
+    } catch {
+      router.push("/signup")
+    } finally {
+      setLoading(null)
+    }
+  }
+
   return (
     <section className="border-t border-border bg-card/50">
       <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
@@ -33,7 +77,9 @@ export function PricingSection() {
                 <span className="text-4xl font-bold text-foreground">{plan.price}</span>
                 <span className="text-sm text-muted-foreground">{plan.period}</span>
               </div>
-              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{plan.description}</p>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                {plan.description}
+              </p>
 
               <ul className="mt-8 flex flex-1 flex-col gap-3">
                 {plan.features.map((feature) => (
@@ -44,13 +90,20 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              <Button
-                asChild
-                className="mt-8 w-full"
-                variant={plan.highlighted ? "default" : "outline"}
-              >
-                <Link href={plan.href}>{plan.cta}</Link>
-              </Button>
+              {plan.name === "Free" ? (
+                <Button asChild className="mt-8 w-full" variant="outline">
+                  <Link href="/signup">{plan.cta}</Link>
+                </Button>
+              ) : (
+                <Button
+                  className="mt-8 w-full"
+                  variant={plan.highlighted ? "default" : "outline"}
+                  disabled={loading === plan.name}
+                  onClick={() => handleUpgrade(plan.name)}
+                >
+                  {loading === plan.name ? "Redirecting..." : plan.cta}
+                </Button>
+              )}
             </div>
           ))}
         </div>
